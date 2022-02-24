@@ -48,7 +48,12 @@ async function populatePage() {
         const lastPrice = value.last_price;
         const baseToken = value.base_token;
         const quoteToken = value.quote_token;
-        const lastPriceText = lastPrice ? lastPrice.toFixed(8) : 'N/A'
+        const lastPriceText = lastPrice ? lastPrice.toFixed(8) : 'N/A';
+        const usdValue = amount * lastPrice * waxPrice;
+
+        if (usdValue < 0.5) {
+            continue;
+        }
 
         const output = `
 <tr>
@@ -56,7 +61,7 @@ async function populatePage() {
 <td style="font-family: 'Courier New', monospace; color: green;">${lastPriceText}</td>
 <td>${Number(amount).toLocaleString()}</td>
 <td><span class="price-wax-value">${(amount * lastPrice).toFixed(4)}</span> WAX</td>
-<td>$${(amount * lastPrice * waxPrice).toFixed(2)}</td>
+<td>$${usdValue.toFixed(2)}</td>
 </tr>`
         exchangeTable.insertAdjacentHTML('afterbegin', output);
     }
