@@ -1,120 +1,128 @@
 const exchangeTable = document.getElementById('exchangeTable');
-const refreshTableButton = document.getElementById('refreshTableButton');
-
-const tokenMap = [
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'e.rplanet', symbolName: 'AETHER'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'onessusonwax', symbolName: 'VOID'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'novarallytok', symbolName: 'SNAKOIL'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'e.rplanet', symbolName: 'WECAN'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'arenaxptoken', symbolName: 'AEXP'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'bludactokens', symbolName: 'BLU'},
-    },
-    {
-        baseToken: {contract: 'eosio.token', symbolName: 'WAX'},
-        quoteToken: {contract: 'token.nefty', symbolName: 'NEFTY'},
-    },
-]
+const dingerAccount = 'ghkek.wam';
+const skipTokens = ['NEFTY', 'WAX', 'TLM', 'DMT'];
 
 async function populatePage() {
+    setTimeout(populatePage, refreshInterval)
 
-    const url = "https://wax.alcor.exchange/api/markets";
-    const response = await fetch(url);
-    const data = await response.json();
+    const account = getAccount();
+    const waxPrice = await getWAXPrice();
+
+    const now = new Date();
+    document.getElementById('timestamp').innerText = now.toLocaleTimeString();
+    document.getElementById('refreshMinutes').innerText = (refreshInterval / 1000 / 60).toLocaleString();
+    document.getElementById('waxPrice').innerText = waxPrice.toLocaleString();
+    document.getElementById('pageHeader').innerText = account;
+    document.getElementById('accountInput').value = account;
+
+    if (account === dingerAccount) {
+        document.getElementById('pageHeader').style.display = 'block';
+        document.getElementById('pageHeader').innerText = 'AtomiKings Dinger Wallet'
+    } else {
+        document.getElementById('pageHeader').style.display = 'none';
+    }
 
     // Reset the table
     exchangeTable.innerHTML = '';
 
-    for (const d of data) {
-        const baseToken = d.base_token;
-        const quoteToken = d.quote_token;
+    const tokenValues = await getTokenValues();
+    const balances = await getAllTokenBalances(account);
 
-        for (const token of tokenMap) {
-            if (baseToken.contract === token.baseToken.contract &&
-                baseToken.symbol.name == token.baseToken.symbolName) {
-                if (quoteToken.contract == token.quoteToken.contract &&
-                    quoteToken.symbol.name == token.quoteToken.symbolName) {
-                    const base = baseToken.symbol.name;
-                    const quote = quoteToken.symbol.name
+    for (const token in balances) {
+        if (skipTokens.includes(token)) {
+            continue;
+        }
 
-                    const output = `<tr><td><a href="https://wax.alcor.exchange/trade/${quote}-${quoteToken.contract}_${token.baseToken.symbolName}-${baseToken.contract}" target="_blank">${quote}</a></td><td style="font-family: 'Courier New', monospace; color: green;">${d.last_price} ${base}</td></tr>`
-                    exchangeTable.insertAdjacentHTML('afterbegin', output);
-                }
-            }
+        const amount = Number(balances[token].amount);
+
+        if (amount < 0.5) {
+            continue;
+        }
+
+        const value = tokenValues[token];
+        if (!value) {
+            console.log('oops', token, value);
+            continue;
+        }
+
+        const lastPrice = value.last_price;
+        const baseToken = value.base_token;
+        const quoteToken = value.quote_token;
+        const lastPriceText = lastPrice ? lastPrice.toFixed(8) : 'N/A'
+
+        const output = `
+<tr>
+<td><a href="https://wax.alcor.exchange/trade/${quoteToken.symbol.name}-${quoteToken.contract}_${baseToken.symbol.name}-${baseToken.contract}" target="_blank">${token}</a></td>
+<td style="font-family: 'Courier New', monospace; color: green;">${lastPriceText}</td>
+<td>${Number(amount).toLocaleString()}</td>
+<td><span class="price-wax-value">${(amount * lastPrice).toFixed(4)}</span> WAX</td>
+<td>$${(amount * lastPrice * waxPrice).toFixed(2)}</td>
+</tr>`
+        exchangeTable.insertAdjacentHTML('afterbegin', output);
+    }
+}
+
+/**
+ * Get latest USD value of WAXP
+ */
+async function getWAXPrice() {
+    const url = 'https://api.coingecko.com/api/v3/simple/price?ids=WAX&vs_currencies=USD';
+    const response = await fetch(url);
+    const data = await response.json();
+    return Number(data.wax.usd);
+}
+
+async function getAllTokenBalances(account) {
+    const dict = {};
+    const response = await fetch(`https://lightapi.eosamsterdam.net/api/balances/wax/${account}`);
+    const data = await response.json();
+
+    for (const balance of data.balances) {
+        const token = balance.currency;
+        dict[token] = {
+            contract: balance.contract,
+            amount: Number.parseFloat(balance.amount),
+            decimals: Number.parseInt(balance.decimals),
+            currency: balance.currency
         }
     }
 
-    // await populateWaxPrice();
-
-
-    const now = new Date();
-    document.getElementById('timestamp').innerText = now.toLocaleTimeString();
-    // });
-
-    setTimeout(populatePage, refreshInterval)
+    return dict;
 }
 
-async function populateWaxPrice() {
-    const url = 'https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=WAX-USDT';
-    const response = await fetch(url, {
-        headers: {
-            "accept": "application/json",
-            "accept-language": "en-US,en;q=0.9",
-            "cache-control": "no-cache",
-            "pragma": "no-cache",
-            "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"91\", \"Chromium\";v=\"91\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            "Access-Control-Allow-Origin": "www.other.com",
-            "Access-Control-Allow-Methods": " GET, POST, PUT, PATCH, POST, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
-        },
-        "referrer": "http://localhost:63342/",
-        "referrerPolicy": "unsafe-url",
-        "body": null,
-        "method": "GET",
-        "mode": "cors",
-        "credentials": "omit"
-    });
-    // const response = await fetch(url, {mode: 'no-cors'});
+async function getTokenValues() {
+    const data = await fetchTokenValues();
+    const values = {}
+    for (const d of data) {
+        if (d.base_token.symbol.name.toUpperCase() === 'WAX') {
+            values[d.quote_token.symbol.name.toUpperCase()] = d;
+        } else if (d.quote_token.symbol.name.toUpperCase() === 'WAX') {
+            console.log('revert', d);
+            values[d.base_token.symbol.name.toUpperCase()] = d;
+        }
+    }
 
-    console.log(response);
+    return values;
+}
 
-    const data = await response.json();
-
-    console.dir(data);
-
-    const output = `<tr><td>WAX</td><td>${data.data.price} USDT</td></tr>`;
-    exchangeTable.insertAdjacentHTML('afterbegin', output);
-
+async function fetchTokenValues() {
+    const e = `https://wax.alcor.exchange/api/markets/`;
+    return await (await fetch(e)).json()
 }
 
 const refreshInterval = 5 * 60 * 1000;
 
+function getAccount() {
+    return document.getElementById('accountInput').value;
+}
+
+async function handleAccountInputSubmit() {
+    await populatePage();
+}
 
 (async () => {
-    // setTimeout(populatePage, refreshInterval)
-
-
+    document.getElementById('accountInput').value = 'mo.xy';
+    //document.getElementById('accountInput').value = 'ghkek.wam';
+    document.getElementById('accountInputSubmit').addEventListener('click', handleAccountInputSubmit);
     await populatePage();
 })();
-
-refreshTableButton.addEventListener('click', populatePage);

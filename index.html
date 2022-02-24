@@ -6,12 +6,15 @@
 <body>
 
 <div class="container">
-    <h2>Exchange Rates</h2>
-    <table>
+    <h2 id="pageHeader"></h2>
+    <table id="mainTable">
         <thead>
         <tr>
             <td>Token</td>
-            <td>Price</td>
+            <td>Price (WAX)</td>
+            <td>Quantity</td>
+            <td>Total Value (WAX)</td>
+            <td>Total Value (USD)</td>
         </tr>
 
         </thead>
@@ -21,14 +24,33 @@
     </table>
 
 
-    <br/>
-    <div>
-        <button id="refreshTableButton">Refresh</button>
+    <div class="row status-row">
+        <div class="column column-50">
+            WAX = $<span id="waxPrice"></span>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            Updated <span id="timestamp"></span>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            Updates every <span id="refreshMinutes"></span> minutes
+        </div>
+        <div class="column column-40">
+            <input type="text" id="accountInput" placeholder="WAX Account">
+            <input type="button" value="GO" id="accountInputSubmit"/>
+        </div>
+
+        <div class="column column-10">
+            <div class="float-right">
+                <a href="https://t.me/nftgaze" target="_blank">Telegram</a>
+            </div>
+        </div>
     </div>
 
-    <br/>
+    <div class="row">
+        <span id="refreshStatus"></span>
+    </div>
 
-    <div id="timestamp"></div>
+    <!--    <div class="row">-->
+    <!--        <button id="refreshTableButton">Refresh</button>-->
+    <!--    </div>-->
 
 </div>
 

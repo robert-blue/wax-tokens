@@ -1,3 +1,27 @@
 body {
     background-color: black;
+    font-family: 'Segoe UI Symbol', 'Roboto', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif
+}
+
+
+#accountInput {
+    color: white;
+    height: 3rem;
+    width: 14rem;
+}
+
+#accountInputSubmit {
+    line-height: 3rem;
+    height: 3rem;
+    border: unset;
+    padding: 0 1rem;
+}
+
+.price-wax-value {
+    color: orange;
+}
+
+#mainTable td, #mainTable th {
+    border-bottom-color: #121212;
+    padding: .5rem 1.5rem;
 }
